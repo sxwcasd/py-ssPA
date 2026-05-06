@@ -90,7 +90,7 @@ def download_KEGG(organism, filepath=None, omics_type='metabolomics'):
         for index,i in enumerate(tqdm(pathway_ids)):
             complist = []
             genelist = []
-            current_url = base_url + organism +":" + i
+            current_url = base_url + organism + i
             # parse the pathway description page
             page = requests.get(current_url)
             lines = page.text.split("\n")
