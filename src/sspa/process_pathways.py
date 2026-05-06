@@ -1,5 +1,5 @@
 import pandas as pd
-import pkg_resources
+from importlib import resources as resources
 import sspa.download_pathways 
 
 def process_reactome(organism, infile=None, download_latest=False, filepath=None, omics_type='metabolomics', identifiers=None):
@@ -27,7 +27,7 @@ def process_reactome(organism, infile=None, download_latest=False, filepath=None
         if omics_type != 'metabolomics':
             raise ValueError('Proteomics/multi-omics pathways only accessible when download_latest=True')
         if infile == None or infile == "R78":
-            stream = pkg_resources.resource_stream(__name__, 'pathway_databases/ChEBI2Reactome_All_Levels_R78.txt')
+            stream = resources.files(__name__).joinpath('pathway_databases/ChEBI2Reactome_All_Levels_R78.txt').open('rb')
             f = pd.read_csv(stream, sep="\t", header=None, encoding='latin-1')
         else:
             f = pd.read_csv(infile, sep="\t", header=None)
@@ -66,7 +66,7 @@ def process_kegg(organism, infile=None, download_latest=False, filepath=None, om
         if omics_type != 'metabolomics':
             raise ValueError('Proteomics/multi-omics pathways only accessible when download_latest=True')
         if infile == None or infile == "R98":
-            stream = pkg_resources.resource_stream(__name__, 'pathway_databases/KEGG_human_pathways_compounds_R98.csv')
+            stream = resources.files(__name__).joinpath('pathway_databases/KEGG_human_pathways_compounds_R98.csv').open('rb')
             pathways_df = pd.read_csv(stream, index_col=0, encoding='latin-1')
         else:
             pathways_df = pd.read_csv(infile, index_col=0)
