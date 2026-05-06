@@ -33,17 +33,17 @@ def download_KEGG(organism, filepath=None, omics_type='metabolomics'):
     for path in pathways:
         path = path.split("\t")
         name = path[1]
-        pathid = re.search(r"(.*)", path[0]).group(1)
+        pathid = re.search(r"(.*)", path[0]).group(1).strip(f"{organism}:")
         pathway_dict[pathid] = name
 
     # get compounds for each pathway
-    base_url = 'http://rest.kegg.jp/get/'
+    base_url = 'https://rest.kegg.jp/get/'
 
     pathway_ids = [*pathway_dict]
     pathway_names = list(pathway_dict.values())
 
     # get release details
-    release_data = requests.get('http://rest.kegg.jp/info/kegg')
+    release_data = requests.get('https://rest.kegg.jp/info/kegg')
     version_no = release_data.text.split()[9][0:3]
 
     if omics_type == 'metabolomics':
@@ -51,7 +51,7 @@ def download_KEGG(organism, filepath=None, omics_type='metabolomics'):
 
         for index,i in enumerate(tqdm(pathway_ids)):
             complist = []
-            current_url = base_url + "pathway:" +i
+            current_url = base_url + organism + i
             # parse the pathway description page
             page = requests.get(current_url)
             lines = page.text.split("\n")
@@ -90,7 +90,7 @@ def download_KEGG(organism, filepath=None, omics_type='metabolomics'):
         for index,i in enumerate(tqdm(pathway_ids)):
             complist = []
             genelist = []
-            current_url = base_url + "pathway:" +i
+            current_url = base_url + organism +":" + i
             # parse the pathway description page
             page = requests.get(current_url)
             lines = page.text.split("\n")
