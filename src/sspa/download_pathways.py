@@ -10,6 +10,30 @@ import zipfile
 import requests
 import io
 
+def extract_kegg_field(lines, field):
+    import re
+    """
+    Extract one KEGG flat-file field, including continuation lines.
+    Example field: 'MODULE', 'GENE', 'COMPOUND', 'KO_PATHWAY'
+    """
+    values = []
+    in_field = False
+    # KEGG field names usually occupy the first 12 characters
+    field_pattern = re.compile(r"^[A-Z_]+")
+    for line in lines:
+        key = line[:12].strip()
+        value = line[12:].strip()
+        if key == field:
+            in_field = True
+            values.append(value)
+        elif in_field and key == "":
+            # continuation line
+            values.append(value)
+        elif in_field and key != "":
+            # next field starts
+            break
+    return values
+
 def download_KEGG(organism, filepath=None, omics_type='metabolomics'):
     '''
     Function for KEGG pathway download
@@ -56,15 +80,11 @@ def download_KEGG(organism, filepath=None, omics_type='metabolomics'):
             page = requests.get(current_url)
             lines = page.text.split("\n")
 
-            try:
-                cpds_start = [lines.index(i) for i in lines if i.startswith("COMPOUND")][0]
-                reference_start = [lines.index(i) for i in lines if i.startswith("REFERENCE") or i.startswith("REL_PATHWAY")][0]
-                cpds_lines = lines[cpds_start:reference_start]
-                first_cpd = cpds_lines.pop(0).split()[1]
-                complist.append(first_cpd)
-                complist = complist + [i.split()[0] for i in cpds_lines]
-                pathway_compound_mapping[i] = list(set(complist))
-            except IndexError:
+            cpds_lines = extract_kegg_field(lines, "COMPOUND")
+            complist = [i.split()[0] for i in cpds_lines]
+            pathway_compound_mapping[i] = list(set(complist))
+            if complist==[]:
+                print(current_url + " has no compounds, skipping...")
                 pathway_compound_mapping[i] = []
 
         # remove empty pathway entries
@@ -94,22 +114,13 @@ def download_KEGG(organism, filepath=None, omics_type='metabolomics'):
             # parse the pathway description page
             page = requests.get(current_url)
             lines = page.text.split("\n")
-
-            try:
-                genes_start = [lines.index(i) for i in lines if i.startswith("GENE")][0]
-                cpds_start = [lines.index(i) for i in lines if i.startswith("COMPOUND")][0]
-                reference_start = [lines.index(i) for i in lines if i.startswith("REFERENCE") or i.startswith("REL_PATHWAY")][0]
-                genes_lines = lines[genes_start:cpds_start]
-                cpds_lines = lines[cpds_start:reference_start]
-
-                first_cpd = cpds_lines.pop(0).split()[1]
-                complist.append(first_cpd)
-                complist = complist + [i.split()[0] for i in cpds_lines]
-                first_gene = genes_lines.pop(0).split()[1]
-                genelist.append(first_gene)
-                genelist = genelist + [i.split()[0] for i in genes_lines]
-                pathway_mapping[i] = list(set(complist)) + list(set(genelist))
-            except IndexError:
+            gene_lines = extract_kegg_field(lines, "GENE")
+            cpds_lines = extract_kegg_field(lines, "COMPOUND")
+            gene_list = [i.split()[0] for i in gene_lines]
+            compound_list = [i.split()[0] for i in cpds_lines]
+            pathway_mapping[i] = list(set(compound_list)) + list(set(gene_list))
+            if compound_list==[] and gene_list==[]:
+                print(current_url + " has no compounds or genes, skipping...")
                 pathway_mapping[i] = []
 
         # remove empty pathway entries
