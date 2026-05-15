@@ -37,7 +37,7 @@ def process_reactome(organism, infile=None, download_latest=False, filepath=None
             groups = {k: list(set(v)) for k, v in groups.items()}
             df = pd.DataFrame.from_dict(groups, orient='index', dtype="object")
         else:
-            df = pd.read_csv(infile, sep=sep, header=None)
+            df = pd.read_csv(infile, index_col=0,sep=sep, header=None)
 
         
         pathways_df = df.dropna(axis=0, how='all', subset=df.columns.tolist()[1:])
@@ -46,6 +46,8 @@ def process_reactome(organism, infile=None, download_latest=False, filepath=None
         # Remove duplicated compounds
         mask = pathways_df.apply(pd.Series.duplicated, 1) & pathways_df.astype(bool)
         pathways_df = pathways_df.mask(mask, None)
+
+        pathways_df = pathways_df.rename(columns={1: "Pathway_name"})
 
         return pathways_df
 
@@ -63,6 +65,8 @@ def process_kegg(organism, infile=None, download_latest=False, filepath=None, om
     '''
     if download_latest:
         pathways_df = sspa.download_pathways.download_KEGG(organism, filepath, omics_type)
+
+        pathways_df = pathways_df.rename(columns={1: "Pathway_name"})
         return pathways_df
 
     else:
@@ -72,7 +76,7 @@ def process_kegg(organism, infile=None, download_latest=False, filepath=None, om
             stream = resources.files(__name__).joinpath('pathway_databases/KEGG_human_pathways_compounds_R98.csv').open('rb')
             pathways_df = pd.read_csv(stream, index_col=0, encoding='latin-1')
         else:
-            pathways_df = pd.read_csv(infile, index_col=0, sep=sep)
+            pathways_df = pd.read_csv(infile, index_col=0, sep=sep, header=None)
 
         pathways_df = pathways_df.dropna(axis=0, how='all', subset=pathways_df.columns.tolist()[1:])
         pathways_df = pathways_df.dropna(axis=1, how='all')
@@ -80,6 +84,7 @@ def process_kegg(organism, infile=None, download_latest=False, filepath=None, om
         # Remove duplicated compounds
         mask = pathways_df.apply(pd.Series.duplicated, 1) & pathways_df.astype(bool)
         pathways_df = pathways_df.mask(mask, None)
+        pathways_df = pathways_df.rename(columns={1: "Pathway_name"})
 
         return pathways_df
     
